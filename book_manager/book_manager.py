@@ -5,7 +5,6 @@
 import json
 import os
 
-# keep books.json in the same folder as this script
 DATA_FILE = os.path.join(os.path.dirname(__file__), "books.json")
 
 
@@ -47,7 +46,7 @@ class EBook(Book):
         super().__init__(title, author, year)
         self._file_format = file_format
 
-    # polymorphism - overriding display()
+    # polymorphism overriding
     def display(self):
         return f'"{self.title}" by {self.author} ({self.year}) [E-Book, {self._file_format}]'
 
@@ -90,7 +89,6 @@ class BookManager:
     def search_by_title(self, search_text):
         found = []
         for book in self._books:
-            # lower() so the search ignores upper/lower case
             if search_text.lower() in book.title.lower():
                 found.append(book)
 
@@ -100,6 +98,14 @@ class BookManager:
             print(f"\n--- Found {len(found)} book(s) ---")
             for book in found:
                 print(book.display())
+
+    def remove_book(self, number):
+        if number < 1 or number > len(self._books):
+            print("There is no book with that number.")
+            return
+        removed = self._books.pop(number - 1)
+        self.save_to_file()
+        print(f"Removed {removed.display()}")
 
     # saving to json file
     def save_to_file(self):
@@ -132,12 +138,14 @@ class BookManager:
             print("There is no data file to delete.")
 
 
+# helper functions
 def get_year():
     # validation for the year
     while True:
         try:
-            year = int(input("Enter the year of publication: "))
-            if 0 < year <= 2100:
+            year = int(input("Enter the year of publication (negative for BC): "))
+            # negative years for BC
+            if year <= 2100:
                 return year
             print("Please enter a realistic year!")
         except ValueError:
@@ -153,6 +161,7 @@ def get_non_empty_text(prompt):
         print("Input cannot be empty!")
 
 
+# menu functions
 def add_book_menu(manager):
     # asks the user for book info and adds it
     title = get_non_empty_text("Enter the title: ")
@@ -167,6 +176,21 @@ def add_book_menu(manager):
         manager.add_book(Book(title, author, year))
 
 
+def remove_book_menu(manager):
+    # show the list first so the user knows which number to pick
+    if len(manager._books) == 0:
+        print("The list is empty. Nothing to remove!")
+        return
+    manager.show_all()
+    while True:
+        try:
+            number = int(input("Enter the number of the book to remove: "))
+            break
+        except ValueError:
+            print("Invalid input! Please enter a whole number.")
+    manager.remove_book(number)
+
+
 def main():
     manager = BookManager()
     print("=== Book Management Application ===")
@@ -175,10 +199,11 @@ def main():
         print("\n1. Add a new book")
         print("2. Show all books")
         print("3. Search book by title")
-        print("4. Delete all data")
-        print("5. Exit")
+        print("4. Remove a book")
+        print("5. Delete all data")
+        print("6. Exit")
 
-        choice = input("Choose an option (1-5): ")
+        choice = input("Choose an option (1-6): ")
 
         if choice == "1":
             add_book_menu(manager)
@@ -188,11 +213,13 @@ def main():
             search_text = get_non_empty_text("Enter the title to search: ")
             manager.search_by_title(search_text)
         elif choice == "4":
-            manager.delete_data_file()
+            remove_book_menu(manager)
         elif choice == "5":
+            manager.delete_data_file()
+        elif choice == "6":
             break
         else:
-            print("Invalid option! Please choose 1-5.")
+            print("Invalid option! Please choose 1-6.")
 
 
 if __name__ == "__main__":
